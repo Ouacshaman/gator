@@ -46,6 +46,7 @@ func main() {
 	cmds.handlers = make(map[string]func(*state, command) error)
 	cmds.register("login",handlerLogin)
 	cmds.register("register", handlerRegister)
+	cmds.register("reset", handlerReset)
 	args := os.Args
 	if len(args) < 2 {
 		fmt.Println("not enough args")
@@ -104,6 +105,11 @@ func handlerRegister(s *state, cmd command) error{
 	}
 	fmt.Printf("User: %s have been created", cmd.args[0])
 	fmt.Println(user)
+	return nil
+}
+
+func handlerReset(s *state, cmd command) error{
+	s.db.DeleteAllUsers(context.Background())
 	return nil
 }
 
