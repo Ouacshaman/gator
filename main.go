@@ -69,6 +69,7 @@ func main() {
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerUsers)
 	cmds.register("agg", handlerAgg)
+	cmds.register("addfeed", handlerAddFeed)
 	args := os.Args
 	if len(args) < 2 {
 		fmt.Println("not enough args")
@@ -156,6 +157,23 @@ func handlerAgg(s *state, cmd command) error{
 		return err
 	}
 	fmt.Println(res)
+	return nil
+}
+
+func handlerAddFeed(s *state, cmd command) error{
+	curr := s.config.Current_user_name
+	usr, err := s.db.GetUser(context.Background(), curr)
+	if err != nil{
+		return err
+	}
+	feed, err := s.db.CreateFeed(context.Background(),
+		database.CreateFeedParams{ID: uuid.New(), CreatedAt: time.Now(),
+			UpdatedAt: time.Now(), Name: cmd.args[0], Url: cmd.args[1], 
+			UserID: usr.ID})
+	if err != nil{
+		return err
+	}
+	fmt.Println(feed)
 	return nil
 }
 
