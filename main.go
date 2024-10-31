@@ -3,12 +3,16 @@ package main
 import (
 	"fmt"
 	"os"
+	"html"
+	"io"
 	"gator/internal/config"
 	"errors"
+	"encoding/xml"
 	"database/sql"
 	"context"
 	"github.com/google/uuid"
 	"time"
+	"net/http"
 	"gator/internal/database"
 	_ "github.com/lib/pq"
 )
@@ -25,6 +29,22 @@ type command struct{
 
 type commands struct{
 	handlers map[string]func(*state, command) error
+}
+
+type RSSFeed struct {
+	Channel struct {
+		Title       string    `xml:"title"`
+		Link        string    `xml:"link"`
+		Description string    `xml:"description"`
+		Item        []RSSItem `xml:"item"`
+	} `xml:"channel"`
+}
+
+type RSSItem struct {
+	Title       string `xml:"title"`
+	Link        string `xml:"link"`
+	Description string `xml:"description"`
+	PubDate     string `xml:"pubDate"`
 }
 
 func main() {
@@ -48,6 +68,7 @@ func main() {
 	cmds.register("register", handlerRegister)
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerUsers)
+	cmds.register("agg", handlerAgg)
 	args := os.Args
 	if len(args) < 2 {
 		fmt.Println("not enough args")
@@ -127,6 +148,44 @@ func handlerUsers(s *state, cmd command) error{
 		fmt.Println(user.Name)
 	}
 	return nil
+}
+
+func handlerAgg(s *state, cmd command) error{
+	res, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if err != nil{
+		return err
+	}
+	fmt.Println(res)
+	return nil
+}
+
+func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error){
+	res := &RSSFeed{}
+	req, err := http.NewRequestWithContext(ctx, "GET", feedURL, nil)
+	if err != nil{
+		return &RSSFeed{}, err
+	}
+	req.Header.Add("User-Agent","gator")
+	client := http.Client{}
+	resp, err := client.Do(req)
+	if err != nil{
+		return &RSSFeed{}, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil{
+		return &RSSFeed{}, err
+	}
+	if err = xml.Unmarshal(body, &res); err != nil{
+		return &RSSFeed{}, err
+	}
+	res.Channel.Title = html.UnescapeString(res.Channel.Title)
+	res.Channel.Description = html.UnescapeString(res.Channel.Description)
+	for i := range res.Channel.Item {
+		res.Channel.Item[i].Title = html.UnescapeString(res.Channel.Item[i].Title)
+		res.Channel.Item[i].Description = html.UnescapeString(res.Channel.Item[i].Description)
+	}
+	return res, nil
 }
 
 func (c *commands) register(name string, f func(*state, command) error){
