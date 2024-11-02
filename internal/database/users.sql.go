@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -97,6 +98,42 @@ DELETE FROM users
 func (q *Queries) DeleteAllUsers(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, deleteAllUsers)
 	return err
+}
+
+const getFeed = `-- name: GetFeed :many
+SELECT feeds.name, feeds.url, users.name
+FROM feeds
+LEFT JOIN users
+ON feeds.user_id = users.id
+`
+
+type GetFeedRow struct {
+	Name   string
+	Url    string
+	Name_2 sql.NullString
+}
+
+func (q *Queries) GetFeed(ctx context.Context) ([]GetFeedRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFeed)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFeedRow
+	for rows.Next() {
+		var i GetFeedRow
+		if err := rows.Scan(&i.Name, &i.Url, &i.Name_2); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUser = `-- name: GetUser :one

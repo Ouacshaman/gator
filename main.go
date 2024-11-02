@@ -70,6 +70,7 @@ func main() {
 	cmds.register("users", handlerUsers)
 	cmds.register("agg", handlerAgg)
 	cmds.register("addfeed", handlerAddFeed)
+	cmds.register("feeds", handlerFeeds)
 	args := os.Args
 	if len(args) < 2 {
 		fmt.Println("not enough args")
@@ -174,6 +175,17 @@ func handlerAddFeed(s *state, cmd command) error{
 		return err
 	}
 	fmt.Println(feed)
+	return nil
+}
+
+func handlerFeeds(s *state, cmd command) error{
+	feeds, err := s.db.GetFeed(context.Background())
+	if err != nil{
+		return err
+	}
+	for _, v := range feeds{
+		fmt.Println(v)
+	}
 	return nil
 }
 
