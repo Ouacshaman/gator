@@ -71,6 +71,7 @@ func main() {
 	cmds.register("agg", handlerAgg)
 	cmds.register("addfeed", handlerAddFeed)
 	cmds.register("feeds", handlerFeeds)
+	cmds.register("follow", handlerFollow)
 	args := os.Args
 	if len(args) < 2 {
 		fmt.Println("not enough args")
@@ -186,6 +187,21 @@ func handlerFeeds(s *state, cmd command) error{
 	for _, v := range feeds{
 		fmt.Println(v)
 	}
+	return nil
+}
+
+func handlerFollow(s *state, cmd command) error{
+	feed, err := s.db.GetFeedByURL(context.Background(), cmd.args[1])
+	if err != nil{
+		return err
+	}
+	cff, err := s.db.CreateFeedFollow(context.Background(),
+		database.CreateFeedFollowParams{ID: uuid.New(), CreatedAt: time.Now(),
+			UpdatedAt: time.Now(), FeedID: feed.id, feed.user_id})
+	if err != nil{
+		return err
+	}
+	fmt.Println(cff.FeedName, cff.UserName)
 	return nil
 }
 
