@@ -36,7 +36,7 @@ FROM feeds
 LEFT JOIN users
 ON feeds.user_id = users.id;
 
--- name: CreateFeedFollow :many
+-- name: CreateFeedFollow :one
 WITH inserted_feed_follow AS (
     INSERT INTO feed_follows (id, created_at, updated_at, feed_id, user_id)
     VALUES(
