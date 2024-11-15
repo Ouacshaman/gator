@@ -163,23 +163,18 @@ func handlerAgg(s *state, cmd command) error{
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error{
-	curr := s.config.Current_user_name
-	usr, err := s.db.GetUser(context.Background(), curr)
-	if err != nil{
-		return err
-	}
+func handlerAddFeed(s *state, cmd command, user database.User) error{
 	feed, err := s.db.CreateFeed(context.Background(),
 		database.CreateFeedParams{ID: uuid.New(), CreatedAt: time.Now(),
 			UpdatedAt: time.Now(), Name: cmd.args[0], Url: cmd.args[1], 
-			UserID: usr.ID})
+			UserID: user.ID})
 	if err != nil{
 		return err
 	}
 	fmt.Println(feed)
 	feedFollow, err := s.db.CreateFeedFollow(context.Background(),
 		database.CreateFeedFollowParams{ID: uuid.New(), CreatedAt: time.Now(),
-			UpdatedAt: time.Now(), FeedID: feed.ID, UserID: feed.UserID})
+			UpdatedAt: time.Now(), FeedID: feed.ID, UserID: user.ID})
 	if err != nil{
 		return err
 	}
@@ -198,11 +193,7 @@ func handlerFeeds(s *state, cmd command) error{
 	return nil
 }
 
-func handlerFollow(s *state, cmd command) error{
-	user, err := s.db.GetUser(context.Background(), s.config.Current_user_name)
-	if err != nil{
-		return err
-	}
+func handlerFollow(s *state, cmd command, user database.User) error{
 	feed, err := s.db.GetFeedByURL(context.Background(), cmd.args[0])
 	if err != nil{
 		return err
@@ -217,11 +208,7 @@ func handlerFollow(s *state, cmd command) error{
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error{
-	user, err := s.db.GetUser(context.Background(), s.config.Current_user_name)
-	if err != nil{
-		return err
-	}
+func handlerFollowing(s *state, cmd command, user database.User) error{
 	feeds, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
 	if err != nil{
 		return err
@@ -230,6 +217,17 @@ func handlerFollowing(s *state, cmd command) error{
 		fmt.Println(v.FeedName)
 	}
 	return nil
+}
+
+func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(*state, command) error {
+	return func(s *state, cmd command) error{
+		user, err := s.db.GetUser(context.Background(), s.config.Current_user_name)
+		if err != nil{
+			return err
+		}
+		handler(s,cmd,user)
+		return nil
+	}
 }
 
 func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error){
