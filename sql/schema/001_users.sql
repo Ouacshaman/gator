@@ -29,7 +29,19 @@ CREATE TABLE feed_follows (
 	UNIQUE (feed_id, user_id)
 );
 
+CREATE TABLE posts (
+	id UUID PRIMARY KEY,
+	created_at TIMESTAMP NOT NULL,
+	updated_at TIMESTAMP NOT NULL,
+	title TEXT NOT NULL,
+	url TEXT UNIQUE NOT NULL,
+	description TEXT,
+	published_at TIMESTAMP,
+	feed_id UUID NOT NULL REFERENCES feeds(id)
+);
+
 -- +goose Down
 DROP TABLE IF EXISTS feed_follows;
 DROP TABLE IF EXISTS feeds;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS posts;
