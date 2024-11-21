@@ -93,13 +93,12 @@ RETURNING *;
 SELECT * FROM posts
 WHERE posts.url = $1;
 
--- name GetPostsUser :many
+-- name: GetPostsUser :many
 SELECT posts.* FROM posts
 INNER JOIN feed_follows AS follows
 ON feed_id = follows.feed_id
 WHERE follows.user_id = $1
-ORDER BY published_at NULLS FIRST DESC, created_at DESC LIMIT $2;
-
+ORDER BY published_at DESC NULLS FIRST, posts.created_at DESC LIMIT $2;
 
 
 
